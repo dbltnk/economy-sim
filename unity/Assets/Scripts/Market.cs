@@ -34,10 +34,10 @@ public class Market : MonoBehaviour
     public class Trader {
         public Commodity Commodity;
         public int Amount;
-        public int Cash;
+        public float Cash;
         public string Name;
 
-        public Trader (Commodity commodity, int amount, int cash, string name) {
+        public Trader (Commodity commodity, int amount, float cash, string name) {
             Commodity = commodity;
             Amount = amount;
             Cash = cash;
@@ -56,12 +56,14 @@ public class Market : MonoBehaviour
         }
     }
 
+    bool allMatched = false;
+
     // Start is called before the first frame update
     void Start()
     {
         for (int i = 0; i <= 9; i++) {
             int a = Random.Range(10, 20);
-            int c = Random.Range(50, 150);
+            float c = Random.Range(50f, 150f);
             Trader t = new Trader(Commodity.FEO, a, c, i.ToString());
             Traders.Add(t);
             float p = Random.Range(1.2f, 2.4f);
@@ -71,6 +73,12 @@ public class Market : MonoBehaviour
             Register(o);
         }
 
+        print("MARKET OPENS");
+        if (allMatched == false) {
+            DisplayMarketStatus();
+            MatchOffers();
+        }
+        print("MARKET CLOSES");
         DisplayMarketStatus();
     }
 
@@ -88,5 +96,49 @@ public class Market : MonoBehaviour
             print(o.ToString());
         }
 
+    }
+    
+    void CleanOffers () {
+        for (int i = 0; i <= Supply.Count-1; i++) {
+            if (Supply[i].Amount <= 0) Supply.RemoveAt(i);
+        }
+
+        for (int i = 0; i <= Demand.Count-1; i++) {
+            if (Demand[i].Amount <= 0) Demand.RemoveAt(i);
+        }
+    }
+
+    void MatchOffers() {
+        // REMOVE ALL OFFERS WITH 0 amount
+        CleanOffers();
+        // GET THE MOST EXPENSIVE DEMAND
+        Demand.Sort((a, b) => (b.Price.CompareTo(a.Price)));
+        Offer offerDemand = Demand[0];
+        // GET THE CHEAPEST SUPPLY
+        Supply.Sort((a, b) => (b.Price.CompareTo(a.Price)));
+        int l = Supply.Count;
+        Offer offerSupply = Supply[l-1];
+        // IF S.price > D.price END
+        if (offerSupply.Price > offerDemand.Price) {
+            allMatched = true;
+            return;
+        }
+        // HOW MUCH CAN WE FULFILL?
+        int amountToFulfill = Mathf.Min(offerSupply.Amount, offerDemand.Amount);
+        // FOR HOW MUCH CASH?
+        float totalPrice = amountToFulfill * offerSupply.Price;
+        // REMOVE AMOUNT FROM SUPPLY
+        offerSupply.Trader.Amount -= amountToFulfill;
+        offerSupply.Amount -= amountToFulfill;
+        // ADD AMOUNT TO DEMANDER
+        offerDemand.Trader.Amount += amountToFulfill;
+        offerDemand.Amount -= amountToFulfill;
+        // REMOVE CASH from DEMANDER
+        offerDemand.Trader.Cash -= totalPrice;
+        // ADD CASH TO SUPPLIER
+        offerSupply.Trader.Cash += totalPrice;
+        // DO IT AGAIN
+        print(string.Concat("Trader ", offerSupply.Trader.Name, " sold ", amountToFulfill, " ", offerDemand.Commodity, " for ", offerSupply.Price, " each to trader ", offerDemand.Trader.Name, "."));
+        MatchOffers();
     }
 }
