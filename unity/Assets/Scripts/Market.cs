@@ -5,6 +5,9 @@ using UnityEngine;
 public class Market : MonoBehaviour
 
 {
+
+    public UIGlue UIGlue;
+
     public int turn;
     public void NextTurn () {
         turn++;
@@ -45,12 +48,14 @@ public class Market : MonoBehaviour
         public int Amount;
         public float Cash;
         public string Name;
+        public int Reactors;
 
         public Trader (Commodity commodity, int amount, float cash, string name) {
             Commodity = commodity;
             Amount = amount;
             Cash = cash;
             Name = name;
+            Reactors = 0;
         }
 
         public override string ToString () {
@@ -58,7 +63,7 @@ public class Market : MonoBehaviour
         }
     }
 
-    List<Trader> Traders = new List<Trader>();
+    public List<Trader> Traders = new List<Trader>();
 
     public class ResourceMarket {
         public Commodity Commodity;
@@ -106,6 +111,7 @@ public class Market : MonoBehaviour
             ResourceMarket m = new ResourceMarket((Commodity)i);
             ResourceMarkets.Add(m);
         }
+        UIGlue.CreateTraders();
     }
 
     private void SetupTraders () {
