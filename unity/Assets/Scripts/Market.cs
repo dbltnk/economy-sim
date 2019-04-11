@@ -118,14 +118,14 @@ public class Market : MonoBehaviour
         // SETUP SOME TRADERS
         print("TRADERS");
         for (int i = 0; i <= TraderAmount - 1; i++) {
-            int a = Random.Range(10, 20);
-            float c = Random.Range(50f, 150f);
+            int a = Random.Range(5, 20);
+            float c = Random.Range(50f, 100f);
             var comm = GetRandomResource();
             Trader t = new Trader(comm, a, c, i.ToString());
             print(t.ToString());
             Traders.Add(t);
-            float p = Random.Range(1.2f, 2.4f);
-            int am = Random.Range(1, a);
+            float p = Random.Range(10f, 20f);
+            int am = Random.Range(10, 40);
             OfferType type = (i % 2 == 0) ? OfferType.buy : OfferType.sell;
             Offer o = new Offer(t.Commodity, am, p, type, t);
             Register(o);
@@ -211,20 +211,26 @@ public class Market : MonoBehaviour
         }
         // HOW MUCH CAN WE FULFILL?
         int amountToFulfill = Mathf.Min(offerSupply.Amount, offerDemand.Amount);
+        // HOW MUCH CAN THE BUYER AFFORD?
+        int amountThatCanBeTraded = Mathf.FloorToInt(offerDemand.Trader.Cash / offerSupply.Price);
+        // HOW MUCH CAN WE TRADE?
+        int amountToTrade = Mathf.Min(amountToFulfill, amountThatCanBeTraded);
+        // STOP IF THAT IS ZERO
+        if (amountToTrade == 0) return;
         // FOR HOW MUCH CASH?
-        float totalPrice = amountToFulfill * offerSupply.Price;
+        float totalPrice = amountToTrade * offerSupply.Price;
         // REMOVE AMOUNT FROM SUPPLY
-        offerSupply.Trader.Amount -= amountToFulfill;
-        offerSupply.Amount -= amountToFulfill;
-        // ADD AMOUNT TO DEMANDER
-        offerDemand.Trader.Amount += amountToFulfill;
-        offerDemand.Amount -= amountToFulfill;
-        // REMOVE CASH from DEMANDER
+        offerSupply.Trader.Amount -= amountToTrade;
+        offerSupply.Amount -= amountToTrade;
+        // ADD AMOUNT TO BUYER
+        offerDemand.Trader.Amount += amountToTrade;
+        offerDemand.Amount -= amountToTrade;
+        // REMOVE CASH from BUYER
         offerDemand.Trader.Cash -= totalPrice;
-        // ADD CASH TO SUPPLIER
+        // ADD CASH TO SELLER
         offerSupply.Trader.Cash += totalPrice;
         // DO IT AGAIN
-        print(string.Concat("Trader ", offerSupply.Trader.Name, " sold ", amountToFulfill, " ", offerDemand.Commodity, " for ", offerSupply.Price, " each to trader ", offerDemand.Trader.Name, "."));
+        print(string.Concat("Trader ", offerSupply.Trader.Name, " sold ", amountToTrade, " ", offerDemand.Commodity, " for ", offerSupply.Price, " each to trader ", offerDemand.Trader.Name, "."));
         MatchOffers(market);
     }
 }
