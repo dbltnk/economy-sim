@@ -5,6 +5,12 @@ using UnityEngine;
 public class Market : MonoBehaviour
 
 {
+    public int turn;
+    public void NextTurn () {
+        turn++;
+        DoTurn();
+    }
+
     public int TraderAmount;
 
     public enum Commodity {FEO, C, O, FE};
@@ -46,6 +52,10 @@ public class Market : MonoBehaviour
             Cash = cash;
             Name = name;
         }
+
+        public override string ToString () {
+            return string.Concat("Trader ", Name, " has ", Amount, " ", Commodity, " and ", Cash, " cash.");
+        }
     }
 
     List<Trader> Traders = new List<Trader>();
@@ -83,14 +93,30 @@ public class Market : MonoBehaviour
     }
 
     // Start is called before the first frame update
-    void Start()
-    {
+    void Start() {
+        SetupTraders();
+        SetupMarkets();
+    }
+
+    private void SetupMarkets () {
+        // DETERMINE HOW MANY MARKETS WE NEED
+        int count = System.Enum.GetValues(typeof(Commodity)).Length;
+        for (int i = 0; i <= count - 1; i++) {
+            // SPLIT INTO SEPERATE MARKETS
+            ResourceMarket m = new ResourceMarket((Commodity)i);
+            ResourceMarkets.Add(m);
+        }
+    }
+
+    private void SetupTraders () {
         // SETUP SOME TRADERS
-        for (int i = 0; i <= TraderAmount-1; i++) {
+        print("TRADERS");
+        for (int i = 0; i <= TraderAmount - 1; i++) {
             int a = Random.Range(10, 20);
             float c = Random.Range(50f, 150f);
             var comm = GetRandomResource();
             Trader t = new Trader(comm, a, c, i.ToString());
+            print(t.ToString());
             Traders.Add(t);
             float p = Random.Range(1.2f, 2.4f);
             int am = Random.Range(1, a);
@@ -98,17 +124,11 @@ public class Market : MonoBehaviour
             Offer o = new Offer(t.Commodity, am, p, type, t);
             Register(o);
         }
+    }
 
+    void DoTurn () {
         print("MARKET OPENS");
 
-        // DETERMINE HOW MANY MARKETS WE NEED
-        int count = System.Enum.GetValues(typeof(Commodity)).Length;
-        for (int i = 0; i <= count-1; i++) {
-            ResourceMarket m = new ResourceMarket((Commodity)i);
-            ResourceMarkets.Add(m);
-        }
-
-        // SPLIT INTO SEPERATE MARKETS
         foreach (ResourceMarket market in ResourceMarkets) {
 
             print(market.Commodity.ToString());
