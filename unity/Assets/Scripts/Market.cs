@@ -3,8 +3,11 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class Market : MonoBehaviour
+
 {
-    public enum Commodity {FEO};
+    public int TraderAmount;
+
+    public enum Commodity {FEO, C, O, FE};
     public enum OfferType {buy, sell};
 
     public class Offer {
@@ -58,13 +61,21 @@ public class Market : MonoBehaviour
 
     bool allMatched = false;
 
+    Commodity GetRandomResource () {
+        int count = System.Enum.GetValues(typeof(Commodity)).Length;
+        int value = Random.Range(0,count-1);
+        Commodity c = (Commodity)value;
+        return c;
+    }
+
     // Start is called before the first frame update
     void Start()
     {
-        for (int i = 0; i <= 9; i++) {
+        for (int i = 0; i <= TraderAmount-1; i++) {
             int a = Random.Range(10, 20);
             float c = Random.Range(50f, 150f);
-            Trader t = new Trader(Commodity.FEO, a, c, i.ToString());
+            var comm = GetRandomResource();
+            Trader t = new Trader(comm, a, c, i.ToString());
             Traders.Add(t);
             float p = Random.Range(1.2f, 2.4f);
             int am = Random.Range(1, a);
