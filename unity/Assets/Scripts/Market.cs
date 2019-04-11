@@ -31,8 +31,8 @@ public class Market : MonoBehaviour
         }
     }
 
-    List<Offer> Supply = new List<Offer>();
-    List<Offer> Demand = new List<Offer>();
+    List<Offer> TotalSupply = new List<Offer>();
+    List<Offer> TotalDemand = new List<Offer>();
 
     public class Trader {
         public Commodity Commodity;
@@ -50,20 +50,34 @@ public class Market : MonoBehaviour
 
     List<Trader> Traders = new List<Trader>();
 
-    public void Register(Offer offer) {
-        if(offer.Type == OfferType.buy) {
-            Demand.Add(offer);
-        }
-        if (offer.Type == OfferType.sell) {
-            Supply.Add(offer);
+    public class ResourceMarket {
+        public Commodity Commodity;
+        public List<Offer> Supply;
+        public List<Offer> Demand;
+        public bool AllMatched;
+
+        public ResourceMarket (Commodity commodity) {
+            Commodity = commodity;
+            Supply = new List<Offer>();
+            Demand = new List<Offer>();
+            AllMatched = false;
         }
     }
 
-    bool allMatched = false;
+    List<ResourceMarket> ResourceMarkets = new List<ResourceMarket>();
+
+    public void Register(Offer offer) {
+        if(offer.Type == OfferType.buy) {
+            TotalDemand.Add(offer);
+        }
+        if (offer.Type == OfferType.sell) {
+            TotalSupply.Add(offer);
+        }
+    }
 
     Commodity GetRandomResource () {
         int count = System.Enum.GetValues(typeof(Commodity)).Length;
-        int value = Random.Range(0,count-1);
+        int value = Random.Range(0,count);
         Commodity c = (Commodity)value;
         return c;
     }
@@ -71,6 +85,7 @@ public class Market : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        // SETUP SOME TRADERS
         for (int i = 0; i <= TraderAmount-1; i++) {
             int a = Random.Range(10, 20);
             float c = Random.Range(50f, 150f);
@@ -85,53 +100,79 @@ public class Market : MonoBehaviour
         }
 
         print("MARKET OPENS");
-        if (allMatched == false) {
-            DisplayMarketStatus();
-            MatchOffers();
+
+        // DETERMINE HOW MANY MARKETS WE NEED
+        int count = System.Enum.GetValues(typeof(Commodity)).Length;
+        for (int i = 0; i <= count-1; i++) {
+            ResourceMarket m = new ResourceMarket((Commodity)i);
+            ResourceMarkets.Add(m);
         }
+
+        // SPLIT INTO SEPERATE MARKETS
+        foreach (ResourceMarket market in ResourceMarkets) {
+
+            print(market.Commodity.ToString());
+
+            for (int i = 0; i <= TotalSupply.Count - 1; i++) {
+                if (TotalSupply[i].Commodity == market.Commodity) {
+                    market.Supply.Add(TotalSupply[i]);
+                }
+            }
+            for (int i = 0; i <= TotalDemand.Count - 1; i++) {
+                if (TotalDemand[i].Commodity == market.Commodity) {
+                    market.Demand.Add(TotalDemand[i]);
+                }
+            }
+            // MATCH EACH MARKET SEPERATELY
+            if (market.AllMatched == false) {
+                DisplayMarketStatus(market);
+                MatchOffers(market);
+            }
+            DisplayMarketStatus(market);
+        }
+
         print("MARKET CLOSES");
-        DisplayMarketStatus();
     }
 
-    void DisplayMarketStatus() {
+    void DisplayMarketStatus(ResourceMarket market) {
 
-        print("Supply");
-        Supply.Sort((a, b) => (b.Price.CompareTo(a.Price)));
-        foreach (Offer o in Supply) {
+        print("SUPPLY");
+        market.Supply.Sort((a, b) => (b.Price.CompareTo(a.Price)));
+        foreach (Offer o in market.Supply) {
             print(o.ToString());
         }
 
-        print("Demand");
-        Demand.Sort((a, b) => (b.Price.CompareTo(a.Price)));
-        foreach (Offer o in Demand) {
+        print("DEMAND");
+        market.Demand.Sort((a, b) => (b.Price.CompareTo(a.Price)));
+        foreach (Offer o in market.Demand) {
             print(o.ToString());
         }
 
     }
     
-    void CleanOffers () {
-        for (int i = 0; i <= Supply.Count-1; i++) {
-            if (Supply[i].Amount <= 0) Supply.RemoveAt(i);
+    void CleanOffers (ResourceMarket market) {
+        for (int i = 0; i <= market.Supply.Count-1; i++) {
+            if (market.Supply[i].Amount <= 0) market.Supply.RemoveAt(i);
         }
 
-        for (int i = 0; i <= Demand.Count-1; i++) {
-            if (Demand[i].Amount <= 0) Demand.RemoveAt(i);
+        for (int i = 0; i <= market.Demand.Count-1; i++) {
+            if (market.Demand[i].Amount <= 0) market.Demand.RemoveAt(i);
         }
     }
 
-    void MatchOffers() {
+    void MatchOffers(ResourceMarket market) {
         // REMOVE ALL OFFERS WITH 0 amount
-        CleanOffers();
+        CleanOffers(market);
         // GET THE MOST EXPENSIVE DEMAND
-        Demand.Sort((a, b) => (b.Price.CompareTo(a.Price)));
-        Offer offerDemand = Demand[0];
+        market.Demand.Sort((a, b) => (b.Price.CompareTo(a.Price)));
+        Offer offerDemand = market.Demand[0];
         // GET THE CHEAPEST SUPPLY
-        Supply.Sort((a, b) => (b.Price.CompareTo(a.Price)));
-        int l = Supply.Count;
-        Offer offerSupply = Supply[l-1];
+        market.Supply.Sort((a, b) => (b.Price.CompareTo(a.Price)));
+        int l = market.Supply.Count;
+        Offer offerSupply = market.Supply[l-1];
         // IF S.price > D.price END
         if (offerSupply.Price > offerDemand.Price) {
-            allMatched = true;
+            market.AllMatched = true;
             return;
         }
         // HOW MUCH CAN WE FULFILL?
@@ -149,7 +190,8 @@ public class Market : MonoBehaviour
         // ADD CASH TO SUPPLIER
         offerSupply.Trader.Cash += totalPrice;
         // DO IT AGAIN
+        print("TRADES");
         print(string.Concat("Trader ", offerSupply.Trader.Name, " sold ", amountToFulfill, " ", offerDemand.Commodity, " for ", offerSupply.Price, " each to trader ", offerDemand.Trader.Name, "."));
-        MatchOffers();
+        MatchOffers(market);
     }
 }

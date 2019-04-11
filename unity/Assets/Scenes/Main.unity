@@ -223,7 +223,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 29c6738d24e2c1644b7a9f545f33af03, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  TraderAmount: 100
+  TraderAmount: 10
 --- !u!4 &1744323199
 Transform:
   m_ObjectHideFlags: 0
