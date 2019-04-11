@@ -124,10 +124,13 @@ public class Market : MonoBehaviour
                 }
             }
             // MATCH EACH MARKET SEPERATELY
+            print("BEFORE TRADE");
             if (market.AllMatched == false) {
                 DisplayMarketStatus(market);
+                print("TRADES");
                 MatchOffers(market);
             }
+            print("AFTER TRADE");
             DisplayMarketStatus(market);
         }
 
@@ -163,6 +166,11 @@ public class Market : MonoBehaviour
     void MatchOffers(ResourceMarket market) {
         // REMOVE ALL OFFERS WITH 0 amount
         CleanOffers(market);
+        // STOP IF THERE IS EITHER NO SUPPLY OR DEMAND TO MATCH
+        if (market.Demand.Count == 0 || market.Supply.Count == 0) {
+            market.AllMatched = true;
+            return;
+        }
         // GET THE MOST EXPENSIVE DEMAND
         market.Demand.Sort((a, b) => (b.Price.CompareTo(a.Price)));
         Offer offerDemand = market.Demand[0];
@@ -190,7 +198,6 @@ public class Market : MonoBehaviour
         // ADD CASH TO SUPPLIER
         offerSupply.Trader.Cash += totalPrice;
         // DO IT AGAIN
-        print("TRADES");
         print(string.Concat("Trader ", offerSupply.Trader.Name, " sold ", amountToFulfill, " ", offerDemand.Commodity, " for ", offerSupply.Price, " each to trader ", offerDemand.Trader.Name, "."));
         MatchOffers(market);
     }
